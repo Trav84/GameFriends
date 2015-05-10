@@ -1,0 +1,123 @@
+<body>
+	<header>
+		<h1> DayTripper </h1>
+		<h2> Places To Visit! </h2>
+	</header>  
+	<section id="mount-point"> </section>
+	<script type="text/jsx">
+
+	/** @jsx React.DOM */
+
+	var PostComponent = React.createClass({
+		handleSubmit: function(e) {
+
+			e.preventDefault();
+			console.log(React.findDOMNode(this.refs.link).value);
+
+			var locationObject = {
+				Title: '',
+				URL: ''
+			};
+
+			locationObject.Title = React.findDOMNode(this.refs.location).value;
+			locationObject.URL = React.findDOMNode(this.refs.link).value;
+
+		    React.findDOMNode(this.refs.location).value = '';
+		    React.findDOMNode(this.refs.link).value = '';
+		    
+			$.ajax({
+				url: '/Trip',
+				dataType: 'json',
+				type: 'POST',
+				data: locationObject,
+				success: function(data) {
+					this.setState({locationObject: locationObject});
+				}.bind(this),
+				error: function(xhr, status, err) {
+					console.error(this.props.link, status, err.toString());
+				}.bind(this)
+			});
+
+			return;	
+		},
+		render: function() {
+			return (
+				<div className = "image-poster">
+					<form onSubmit={this.handleSubmit}>
+						<input className ="input" type="text" placeholder="Location" ref="location" />
+						<input className ="input" type="url" placeholder="Image URL" ref="link" />
+						<br/>
+						<input className ="button" type="submit" value="Post" />
+					</form>
+				</div>
+			)
+		}
+	});
+
+	var TripList = React.createClass({ 
+		incrementLike: function(e) {
+			console.log('Clicked');
+			this.setState({ like: this.state.like+1 });
+		},
+		getInitialState: function() {
+			return { 
+				like: 0,
+				pictures: [] 
+			};
+		},
+		componentDidMount: function() {
+			var self = this;
+			//var url = 'https://tiny-pizza-server.herokuapp.com/collections/trav-react';
+			var url = '/Trip';
+
+			setInterval(function() {
+				$.getJSON(url, function(result) {
+					if(!result){
+	               		return;
+	           		}
+
+	           		var pictures = result.map(function(p){
+	                return { 
+	                    id: p._id, 
+	                    src: p.URL, 
+	                    title: p.Title 
+	                };
+
+	            });
+
+	            self.setState({ pictures: pictures });
+	        	});
+			}, 2000);
+		},
+		render: function() {
+	        var self = this;
+
+	        var pictures = this.state.pictures.map(function(p){
+	            return (
+	            	<div>
+	            		<img ref={p._id} src={p.src} title={p.title}  />
+	            		<h1> {p.title} </h1>
+	            	</div>
+	            	);
+	        });
+
+	        if(!pictures.length){
+	            pictures = <p>Loading images..</p>;
+	        }
+
+	        return (
+	            <div>
+	            	<PostComponent />
+	                <div className="card" onClick={this.incrementLike}> {pictures} </div>
+	            </div>
+	        );
+	    }
+	});
+
+	React.render(
+	    <TripList />,
+	    document.getElementById('mount-point')
+	);
+
+	</script>
+</body>
